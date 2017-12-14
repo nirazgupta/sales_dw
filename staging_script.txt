@@ -1,0 +1,221 @@
+--factSales2 STAGING
+select DISTINCT 
+ol.order_line_key,
+ol.order_line_id, 
+ol.[ol_qty],
+ord.[order_key],
+ord.[order_id],
+ord.[order_date],
+ord.[ord_shipping_charge],
+ord.[ord_subtotal],
+ord.[ord_total],
+cust.[customer_key],
+cust.[customer_id],
+cust.[cust_lname],
+cust.[cust_fname],
+cust.[cust_street_address],
+cust.[cust_city],
+cust.[cust_state_province],
+cust.[cust_postal_code],
+emp.[employee_key],
+emp.[employee_id],
+emp.[emp_lname],
+emp.[emp_fname],
+emp.[emp_street],
+emp.[emp_city],
+emp.[emp_state_province],
+emp.[emp_zip],
+emp.[emp_dob],
+emp.[emp_hire_date],
+prod.[product_key],
+prod.[product_id],
+prod.[product_name],
+prod.[prod_unit_price],
+prod.[prod_unit_cost],
+jt.[job_title_key],
+jt.[job_title_id],
+jt.[job_title],
+s.[s_m_key],
+s.[s_m_id],
+s.[ship_method_name],
+s.[ship_price],
+rp.[return_key],
+rp.[return_id],
+rp.[retr_qty],
+rp.[date_returned],
+rp.[return_refund],
+rc.[ret_cat_key],
+rc.[ret_cat_id],
+rc.[return_description],
+inv.[inventory_key],
+inv.[inventory_id],
+inv.[inv_qoh],
+dc.[category_key],
+dc.[category_id],
+dc.[category_name],
+br.branch_key,
+br.branch_id,
+br.br_city,
+br.br_street_address,
+br.br_state_province,
+br.br_postal_code,
+reg.region_key,
+reg.region_id,
+reg.timezone,
+sal.salary,
+dt.tax_key,
+dt.tax_id,
+dt.tax_percent,
+ware.warehouse_key,
+ware.warehouse_id,
+ware.wh_street_address,
+ware.wh_city,
+ware.wh_state,
+ware.wh_postal_code,
+ware.wh_phone,
+pp.[promo_price_key],
+pp.[promo_price_id],
+pp.[promo_price],
+pp.[promo_start_date],
+pp.[promo_end_date]
+into stage_ord_new_ver2
+from dim_orders ord 
+right join dim_order_line ol on ord.order_id = ol.order_id
+join dimcustomer cust on cust.customer_id = ord.customer_id
+join dimemployee emp on emp.employee_id = ord.employee_id
+join dim_product prod on prod.product_id = ol.product_id
+join dimjob_title jt on jt.job_title_id = emp.job_title_id
+join [dbo].[dim_shipping_method] s on s.s_m_id = ord.s_m_id
+join diminventory inv on inv.product_id = prod.product_id
+--left join dimcommission mc on mc.employee_id = emp.employee_id
+left join dim_returnprod rp on rp.order_line_id = ol.order_line_id
+left join dim_return_category rc on rc.ret_cat_id = rp.ret_cat_id
+left join dimcategory dc on dc.category_id = prod.category_id
+join dimbranch br on br.branch_id = emp.branch_id
+left join dim_salary sal on sal.job_title_id = jt.job_title_id
+join dim_region reg on reg.region_id = br.region_id
+join dim_warehouse ware on ware.warehouse_id = inv.warehouse_id
+left join dim_promo_price pp on pp.product_id = prod.product_id
+left join dim_tax dt on dt.tax_id = ord.tax_id;
+
+
+
+
+--INSERT INTO factSales2
+select		DISTINCT
+			ord.[order_key]
+           ,ol.[order_line_key]
+           ,prod.[product_key]
+           ,rp.[return_key]
+           ,rc.[ret_cat_key]
+           ,s.[s_m_key]
+           ,cust.[customer_key]
+           ,emp.[employee_key]
+           ,inv.[inventory_key]
+           ,jt.[job_title_key]
+		   ,dc.category_key
+		   ,br.branch_key
+		   ,reg.region_id
+		   ,dt.tax_key
+		   ,pp.promo_price_key
+		   ,ware.warehouse_key
+           ,ord.[order_date]
+           ,ord.[ord_shipping_charge]
+           ,ord.[ord_subtotal]
+           ,ord.[ord_total]
+           ,ol.[ol_qty]
+           ,rp.[retr_qty]
+           ,rp.[return_refund]
+		   ,inv.inv_qoh
+		   ,dt.tax_percent
+		   ,pp.promo_price
+		   ,pp.promo_start_date
+		   ,pp.promo_end_date
+		   ,emp.emp_hire_date
+		   ,emp.emp_dob
+INTO factSales_ver3
+from stage_ord_new_ver2 sn 
+join dim_orders ord on sn.order_id = ord.order_id
+right join dim_order_line ol on sn.[order_line_id] = ol.[order_line_id]
+join dimcustomer cust on sn.customer_id = cust.customer_id
+join dimemployee emp on emp.employee_id = sn.employee_id
+join dim_product prod on prod.product_id = sn.product_id
+join dimjob_title jt on jt.job_title_id = sn.job_title_id
+join [dbo].[dim_shipping_method] s on s.s_m_id = sn.s_m_id
+join diminventory inv on inv.inventory_id = sn.inventory_id
+left join dim_returnprod rp on rp.[return_id] = sn.[return_id]
+left join dim_return_category rc on rc.ret_cat_id = sn.ret_cat_id
+left join dimcategory dc on dc.category_id = sn.category_id
+join dimbranch br on br.branch_id = sn.branch_id
+left join dim_salary sal on sal.job_title_id =sn.job_title_id
+join dim_region reg on reg.region_id = sn.region_id
+join dim_tax dt on dt.tax_id = sn.tax_id
+left join dim_promo_price pp on pp.promo_price_id = sn.promo_price_id
+join dim_warehouse ware on ware.warehouse_id = sn.warehouse_id;
+
+
+--factVend staging
+select 
+vend.[vendor_key],
+vend.[vendor_id],
+vend.[vendor_name],
+vend.[vend_street],
+vend.[vend_city],
+vend.[vend_state],
+vend.[vend_zip],
+vend.[vend_phone],
+pord.[pv_ord_key],
+pord.[pv_ord_id],
+pord.[pv_order_date],
+pord.[pv_expected_ship_date],
+pord.[pv_shipped_date],
+pord.[pv_total_cost],
+pvol.[pv_ol_key],
+pvol.[pv_ol_id],
+pvol.[product_id],
+pvol.[pvol_qty],
+prod.[product_key],
+prod.[product_name],
+prod.[prod_unit_price],
+prod.[prod_unit_cost],
+vendsh.[vend_ship_key],
+vendsh.[vend_ship_id],
+vendsh.[s_m_id],
+vendp.[vendor_price_key],
+vendp.[vendor_price_id],
+vendp.[vendor_price],
+vendp.[vend_discount],
+vendp.[vend_dis_start_date],
+vendp.[vend_dis_end_date]
+INTO stage_vendor
+from dim_vendor vend 
+join dim_prod_vend_ord pord on pord.vendor_id = vend.vendor_id
+join dim_prod_vend_ol pvol on pvol.pv_ord_id = pord.pv_ord_id
+join dim_product prod on prod.product_id = pvol.product_id
+left join dim_vend_ship vendsh on vendsh.vendor_id = vend.vendor_id
+left join dim_vendor_price vendp on vendp.product_id = prod.product_id;
+
+
+--INSERT INTO factVend
+select 
+vend.[vendor_key],
+pord.[pv_ord_key],
+pvol.[pv_ol_key],
+prod.[product_key],
+vendsh.[vend_ship_key],
+vendp.[vendor_price_key],
+pord.[pv_order_date],
+pord.[pv_total_cost],
+pvol.[pvol_qty],
+prod.[prod_unit_price],
+prod.[prod_unit_cost],
+vendp.[vendor_price],
+vendp.[vend_discount]
+INTO factVend
+from stage_vendor so
+join dim_vendor vend on vend.vendor_id = so.vendor_id
+join dim_prod_vend_ord pord on pord.pv_ord_id  = so.pv_ord_id
+join dim_prod_vend_ol pvol on pvol.pv_ol_id = so.pv_ol_id
+join dim_product prod on prod.product_id = so.product_id
+left join dim_vend_ship vendsh on vendsh.vend_ship_id = so.vend_ship_id
+left join dim_vendor_price vendp on vendp.vendor_price_id = so.vendor_price_id;
